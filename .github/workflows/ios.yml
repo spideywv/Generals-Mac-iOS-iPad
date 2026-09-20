@@ -1,0 +1,67 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install cmake ninja meson pkg-config xcodegen
+
+      - name: Show Xcode info
+        run: |
+          xcode-select -p
+          xcodebuild -version
+
+      - name: Fetch MoltenVK
+        run: ./scripts/build/ios/fetch-moltenvk.sh
+
+      - name: Stage fonts
+        run: ./scripts/build/ios/stage-fonts.sh
+
+      - name: Configure iOS build
+        run: cmake --preset ios-vulkan
+
+      - name: Build engine
+        run: cmake --build build/ios-vulkan --target z_generals
+
+      - name: Package iOS app
+        if: ${{ secrets.GX_TEAM_ID != '' }}
+        env:
+          GX_TEAM_ID: ${{ secrets.GX_TEAM_ID }}
+          GX_BUNDLE_ID: ${{ secrets.GX_BUNDLE_ID || 'com.githubactions.generalszh' }}
+        run: |
+          echo "Signing enabled..."
+          ./scripts/build/ios/package-ios-zh.sh --dev
+
+      - name: Warning if signing missing
+        if: ${{ secrets.GX_TEAM_ID == '' }}
+        run: |
+          echo "::warning::Missing GX_TEAM_ID. Without Apple Developer credentials, signed IPA will not be produced."
+          echo "Add secrets: GX_TEAM_ID and optionally GX_BUNDLE_ID"
+
+      - name: Show generated files
+        run: |
+          echo "== .ipa =="
+          find . -type f -name "*.ipa" -print || true
+          echo "== .app =="
+          find . -type d -name "*.app" -print || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Generals-iOS-build-artifacts
+          path: |
+            **/*.ipa
+            **/*.app
+            build/ios-vulkan/**
+          if-no-files-found: warn
