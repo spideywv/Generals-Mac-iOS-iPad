@@ -23,6 +23,8 @@ jobs:
           xcodebuild -version
 
       - name: Fetch MoltenVK
+        env:
+          GX_MOLTENVK_ROOT: ${{ github.workspace }}/MoltenVK
         run: ./scripts/build/ios/fetch-moltenvk.sh
 
       - name: Stage fonts
@@ -48,6 +50,40 @@ jobs:
         run: |
           echo "::warning::Missing GX_TEAM_ID. Without Apple Developer credentials, signed IPA will not be produced."
           echo "Add secrets: GX_TEAM_ID and optionally GX_BUNDLE_ID"
+
+      - name: Package unsigned development IPA
+        if: ${{ secrets.GX_TEAM_ID == '' }}
+        run: |
+          set -euo pipefail
+          cd ios
+          xcodegen generate --quiet
+          xcodebuild -project GeneralsXZH.xcodeproj \
+            -scheme GeneralsXZH -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+          mkdir -p ../build/ios-package
+          cp -R build/Build/Products/Release-iphoneos/GeneralsXZH.app ../build/ios-package/
+          cp ../build/ios-vulkan/GeneralsMD/GeneralsXZH.app/GeneralsXZH \
+            ../build/ios-package/GeneralsXZH.app/GeneralsXZH
+          mkdir -p ../build/ios-package/GeneralsXZH.app/Frameworks
+          for lib in \
+            ../build/ios-vulkan/_deps/dxvk-build-macos/src/d3d8/libdxvk_d3d8.0.dylib \
+            ../build/ios-vulkan/_deps/dxvk-build-macos/src/d3d9/libdxvk_d3d9.0.dylib \
+            ../build/ios-vulkan/_deps/sdl3-build/libSDL3.0.dylib \
+            ../build/ios-vulkan/_deps/sdl3_image-build/libSDL3_image.0.dylib \
+            ../build/ios-vulkan/_deps/openal_soft-build/libopenal.1.24.2.dylib; do
+            test -f "$lib" && cp "$lib" ../build/ios-package/GeneralsXZH.app/Frameworks/
+          done
+          cp -R ../MoltenVK/MoltenVK/MoltenVK/dynamic/MoltenVK.xcframework/ios-arm64/MoltenVK.framework \
+            ../build/ios-package/GeneralsXZH.app/Frameworks/
+          install_name_tool -add_rpath "@executable_path/Frameworks" \
+            ../build/ios-package/GeneralsXZH.app/GeneralsXZH || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleExecutable string GeneralsXZH" \
+            ../build/ios-package/GeneralsXZH.app/Info.plist || true
+          mkdir -p ../build/unsigned-payload/Payload
+          cp -R ../build/ios-package/GeneralsXZH.app ../build/unsigned-payload/Payload/
+          (cd ../build/unsigned-payload && zip -qry ../GeneralsXZH-unsigned.ipa Payload)
 
       - name: Show generated files
         run: |
