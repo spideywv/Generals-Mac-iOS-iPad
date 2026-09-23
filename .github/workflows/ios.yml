@@ -9,6 +9,7 @@ jobs:
     env:
       GX_TEAM_ID: ${{ secrets.GX_TEAM_ID }}
       GX_BUNDLE_ID: ${{ secrets.GX_BUNDLE_ID || 'com.githubactions.generalszh' }}
+      VCPKG_BINARY_SOURCES: clear
 
     steps:
       - name: Checkout
