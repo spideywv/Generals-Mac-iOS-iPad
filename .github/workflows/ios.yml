@@ -36,6 +36,17 @@ jobs:
           GX_MOLTENVK_ROOT: ${{ github.workspace }}/MoltenVK
         run: ./scripts/build/ios/fetch-moltenvk.sh
 
+      - name: Prepare MoltenVK SDK layout
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/MoltenVK/MoltenVK"
+          static="$root/static/MoltenVK.xcframework/ios-arm64"
+          test -f "$static/libMoltenVK.a"
+          mkdir -p "$root/lib" "$root/include"
+          cp "$static/libMoltenVK.a" "$root/lib/"
+          cp -R "$root/include/"* "$root/include/" 2>/dev/null || true
+          echo "VULKAN_SDK=$root" >> "$GITHUB_ENV"
+
       - name: Stage fonts
         run: ./scripts/build/ios/stage-fonts.sh
 
