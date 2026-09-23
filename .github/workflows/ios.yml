@@ -22,8 +22,6 @@ jobs:
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: 'ffc071e0c08432c60c9b64f00334c0227667931b'
 
       - name: Show Xcode info
         run: |
