@@ -6,6 +6,9 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    env:
+      GX_TEAM_ID: ${{ secrets.GX_TEAM_ID }}
+      GX_BUNDLE_ID: ${{ secrets.GX_BUNDLE_ID || 'com.githubactions.generalszh' }}
 
     steps:
       - name: Checkout
@@ -37,22 +40,19 @@ jobs:
         run: cmake --build build/ios-vulkan --target z_generals
 
       - name: Package iOS app
-        if: ${{ secrets.GX_TEAM_ID != '' }}
-        env:
-          GX_TEAM_ID: ${{ secrets.GX_TEAM_ID }}
-          GX_BUNDLE_ID: ${{ secrets.GX_BUNDLE_ID || 'com.githubactions.generalszh' }}
+        if: ${{ env.GX_TEAM_ID != '' }}
         run: |
           echo "Signing enabled..."
           ./scripts/build/ios/package-ios-zh.sh --dev
 
       - name: Warning if signing missing
-        if: ${{ secrets.GX_TEAM_ID == '' }}
+        if: ${{ env.GX_TEAM_ID == '' }}
         run: |
           echo "::warning::Missing GX_TEAM_ID. Without Apple Developer credentials, signed IPA will not be produced."
           echo "Add secrets: GX_TEAM_ID and optionally GX_BUNDLE_ID"
 
       - name: Package unsigned development IPA
-        if: ${{ secrets.GX_TEAM_ID == '' }}
+        if: ${{ env.GX_TEAM_ID == '' }}
         run: |
           set -euo pipefail
           cd ios
