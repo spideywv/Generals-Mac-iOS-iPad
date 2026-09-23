@@ -38,6 +38,12 @@ jobs:
       - name: Stage fonts
         run: ./scripts/build/ios/stage-fonts.sh
 
+      - name: Use runner-compatible FFmpeg port
+        run: |
+          rm -f vcpkg-lock.json
+          jq 'del(.overrides)' vcpkg.json > vcpkg.json.tmp
+          mv vcpkg.json.tmp vcpkg.json
+
       - name: Configure iOS build
         run: cmake --preset ios-vulkan
 
