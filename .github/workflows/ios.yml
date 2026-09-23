@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install cmake ninja meson pkg-config xcodegen autoconf automake libtool
+          brew install cmake ninja meson pkg-config xcodegen autoconf automake libtool glslang
 
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
@@ -66,6 +66,10 @@ jobs:
           mv vcpkg.json.tmp vcpkg.json
 
       - name: Configure iOS build
+        env:
+          CFLAGS: ""
+          CXXFLAGS: ""
+          LDFLAGS: ""
         run: cmake --preset ios-vulkan
 
       - name: Build engine
