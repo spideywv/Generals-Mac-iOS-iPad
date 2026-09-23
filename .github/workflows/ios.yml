@@ -40,11 +40,10 @@ jobs:
         run: |
           set -euo pipefail
           root="$GITHUB_WORKSPACE/MoltenVK/MoltenVK"
-          static="$root/static/MoltenVK.xcframework/ios-arm64"
-          test -f "$static/libMoltenVK.a"
+          static="$(find "$root" -path '*MoltenVK.xcframework/ios-arm64/libMoltenVK.a' -print -quit)"
+          test -n "$static"
           mkdir -p "$root/lib" "$root/include"
           cp "$static/libMoltenVK.a" "$root/lib/"
-          cp -R "$root/include/"* "$root/include/" 2>/dev/null || true
           echo "VULKAN_SDK=$root" >> "$GITHUB_ENV"
 
       - name: Stage fonts
